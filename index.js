@@ -137,9 +137,28 @@ app.get("/ordersbyuser/:id", async (request, response) => {
     const userId = request.params.id;
     try {
         const orders = await OrderModel.find({user: new mongoose.Types.ObjectId(userId) })
-        // .populate("user")
+        .populate("product")
+        .populate("user")
         .exec();
 
+        return response.json({
+            status: true,
+            orders: orders
+        });
+
+    } catch (error) {
+        return response.json({
+            status: false,
+        })
+    }
+
+});
+
+app.get("/orders", async (request, response) => {
+
+
+    try {
+        const orders = await OrderModel.find({});
         return response.json({
             status: true,
             orders: orders
