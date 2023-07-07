@@ -8,6 +8,11 @@ const ProductModel = require("./models/ProductModel");
 const UserModel = require("./models/UserModel");
 const OrderModel = require("./models/OrderModel");
 const bcrypt = require('bcrypt');
+var jwt = require('jsonwebtoken');
+const privateKey = "khkhj&^5234234((*23423";
+
+// validators
+const validator  = require('express-validator');
 
 app.use(express.json());
 
@@ -41,8 +46,16 @@ app.post("/uploads", upload.array('images'), async (request, response) => {
 });
 
 // create user
-app.post("/signup", upload.single('image'), async (request, response) => {
+app.post("/signup",upload.single('image'), async (request, response) => {
 
+    // if(!validator.isEmail(request.body.email)) {
+    //     return response.json({
+    //         status: false,
+    //         message: "email is not correct"
+    //     })
+    // }
+
+    
 
     // upload file
     uploadImageSingle(request, request.file);
@@ -59,6 +72,7 @@ app.post("/signup", upload.single('image'), async (request, response) => {
         // generate hashed password
         request.body.password = await bcrypt.hash(request.body.password, 10);
 
+        // sanitizing
         await UserModel.create(request.body);
         response.json({
             status: true
@@ -79,6 +93,66 @@ app.post("/signup", upload.single('image'), async (request, response) => {
     }
 
 });
+
+app.post("/profile", async (request, response) => {
+
+    const token = request.body.token;
+    console.log(token); 
+
+    try {
+        var decoded = jwt.verify(token, privateKey);
+        return response.json({
+            data: decoded
+        })
+    } catch (error) {
+        return response.json({
+            status: false,
+            message: "Token is not valid"
+        })
+    }
+   
+
+
+  
+})
+
+app.post("/login", async (request, response) => {
+    const email = request.body.email;
+    const password = request.body.password;
+
+    //STEP 1  user is reqistered or not
+    let users = await UserModel.find({ email: email });
+    if (users.length <= 0) {
+        return response.json({
+            status: false,
+            message: "This email is not registered"
+        })
+    }
+
+     //STEP 2 now we got the user, now check password is correct
+    const user = users[0];
+    try {
+        console.log(user.password);
+        const isPassOk = await bcrypt.compare(password, user.password);
+        if(isPassOk == true) {
+            const token = jwt.sign({ name: user.name, id:user._id, role: user.role }, privateKey);
+            return response.json({
+                status: true,
+                token: token
+            })
+        }else {
+            return response.json({
+                status: false,
+                message: "username or password is incorrect"
+            })
+        }
+
+
+    } catch (error) {
+        
+    }
+
+})
 
 app.post("/product-create", upload.array('images'), async (request, response) => {
 
