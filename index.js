@@ -10,6 +10,8 @@ const OrderModel = require("./models/OrderModel");
 const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
 const privateKey = "khkhj&^5234234((*23423";
+const authCheck = require("./middlewares/authCheck");
+
 
 // validators
 const validator  = require('express-validator');
@@ -94,23 +96,24 @@ app.post("/signup",upload.single('image'), async (request, response) => {
 
 });
 
-app.post("/profile", async (request, response) => {
+app.post("/profile", authCheck, async (request, response) => {
 
-    const token = request.body.token;
-    console.log(token); 
+   console.log(request.data.id);
+    const userId = new mongoose.Types.ObjectId(request.data.id);
 
     try {
-        var decoded = jwt.verify(token, privateKey);
+        const orders = await OrderModel.find({ user: userId})
+        .populate("product")
+        .populate("user")
+        .exec();
+
         return response.json({
-            data: decoded
+            status: true,
+            orders: orders
         })
     } catch (error) {
-        return response.json({
-            status: false,
-            message: "Token is not valid"
-        })
+        console.log(error);
     }
-   
 
 
   
@@ -121,8 +124,8 @@ app.post("/login", async (request, response) => {
     const password = request.body.password;
 
     //STEP 1  user is reqistered or not
-    let users = await UserModel.find({ email: email });
-    if (users.length <= 0) {
+    let user = await UserModel.findOne({ email: email });
+    if (!user) {
         return response.json({
             status: false,
             message: "This email is not registered"
@@ -130,9 +133,7 @@ app.post("/login", async (request, response) => {
     }
 
      //STEP 2 now we got the user, now check password is correct
-    const user = users[0];
     try {
-        console.log(user.password);
         const isPassOk = await bcrypt.compare(password, user.password);
         if(isPassOk == true) {
             const token = jwt.sign({ name: user.name, id:user._id, role: user.role }, privateKey);
