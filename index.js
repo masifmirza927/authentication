@@ -252,10 +252,31 @@ app.get("/orders", async (request, response) => {
 
 app.get("/search", async (request, response) => {
    
-    const query = request.query.title;
+    const search = request.query.q;
+    const price = request.query.price;
+
+    let QueryObject = {
+        title: {$regex: search, $options: 'i'}
+    };
+
+    if(price !== "0") {
+        const minPrice = Number(price?.split("-")[0]);
+        const maxPrice =  Number(price?.split("-")[1]);
     
+        
+        // check if price is greater than only
+        if(maxPrice === 0) {
+            QueryObject["price"] = {$gte : minPrice};
+        } else if(!isNaN(minPrice) && !isNaN(maxPrice)){
+            QueryObject["price"] = {$gte : minPrice, $lte : maxPrice};
+        }
+    }
+
+    
+    console.log(QueryObject);
+
     try {
-        const products = await ProductModel.find({title: {$regex: query, $options: 'i'} });
+        const products = await ProductModel.find(QueryObject);
         return response.json({
             status: true,
             products: products
@@ -264,6 +285,7 @@ app.get("/search", async (request, response) => {
     } catch (error) {
         return response.json({
             status: false,
+            error: error.message
         })
     }
 
