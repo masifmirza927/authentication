@@ -11,12 +11,14 @@ const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
 const privateKey = "khkhj&^5234234((*23423";
 const authCheck = require("./middlewares/authCheck");
+const cors = require("cors");
 
 
 // validators
 const validator  = require('express-validator');
 
 app.use(express.json());
+app.use(cors());
 
 app.post("/uploads", upload.array('images'), async (request, response) => {
 
@@ -136,7 +138,7 @@ app.post("/login", async (request, response) => {
     try {
         const isPassOk = await bcrypt.compare(password, user.password);
         if(isPassOk == true) {
-            const token = jwt.sign({ name: user.name, id:user._id, role: user.role }, privateKey);
+            const token = jwt.sign({name: user.name, id:user._id, role: user.role }, privateKey);
             return response.json({
                 status: true,
                 token: token
@@ -237,6 +239,26 @@ app.get("/orders", async (request, response) => {
         return response.json({
             status: true,
             orders: orders
+        });
+
+    } catch (error) {
+        return response.json({
+            status: false,
+        })
+    }
+
+});
+
+
+app.get("/search", async (request, response) => {
+   
+    const query = request.query.title;
+    
+    try {
+        const products = await ProductModel.find({title: {$regex: query, $options: 'i'} });
+        return response.json({
+            status: true,
+            products: products
         });
 
     } catch (error) {
