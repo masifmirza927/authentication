@@ -292,6 +292,24 @@ app.get("/search", async (request, response) => {
 });
 
 
+// likes api
+app.put("/product/like/:id", async (request, response) => {
+    const id = request.params.id;
+    try {
+        await ProductModel.findByIdAndUpdate(id, {
+            $inc: { likes: 1 }
+        });
+        return response.status(200).json({
+            status: true
+        })
+    } catch (error) {
+        return response.status(400).json({
+            status: false,
+            error: error.message
+        })
+    }
+})
+
 // multiple
 function uploadImages(request, image, ind) {
     if (image.mimetype == "image/png" || image.mimetype == "image/jpg" || image.mimetype == "image/jpeg") {

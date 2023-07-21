@@ -7,7 +7,11 @@ const ProductSchema = new Schema({
     image1: String,
     image2: String,
     price: Number,
-    salePrice: Number
+    salePrice: Number,
+    likes: {
+        type: Number,
+        default: 0
+    }
 }, { timestamps: true });
 const ProductModel = mongoose.model('Product', ProductSchema);
 module.exports = ProductModel
